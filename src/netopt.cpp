@@ -10,42 +10,40 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include "my_rand.hpp"
+
 using namespace std;
 
-const int maxVertices = 10;  // will be 5000
+const int MAXVERTICES = 10;  	// will be 5000
+const int SPARSECONNECT = 6;	// number of sparse connections
 
 void printGraph(vector <vector <int> > G) {
 	unsigned int i, j;
-	for (i=0; i<maxVertices; i++) {
+	for (i=0; i<MAXVERTICES; i++) {
 		cout << "v[" << i << "] = ";
 		for (j=0; j<G.at(i).size(); j++)
-			cout << G.at(i).at(j) << ", ";
+			cout << G.at(i).at(j) << "  ";
 		cout << endl;
 	}
 }
-void makeSparseGraph(vector <vector <int> > G) {
-
-	for (int i=0; i<maxVertices; i++) {
-		G.at(i).push_back(i*5);
-		G.at(i).push_back(i*15);
+void makeSparseGraph(vector <vector <int> > &G) {
+	for (int i=0; i<MAXVERTICES; i++) {
+		for (int j=0; j<SPARSECONNECT; j++) {
+			//G.at(i).push_back(getRand(0,MAXVERTICES));
+		}
 	}
-	G.at(3).push_back(175);
-	G.at(3).push_back(215);
-	G.at(3).push_back(225);
-	G.at(3).push_back(25);
-	printGraph(G);
 }
-void makeDenseGraph() {
+void makeDenseGraph(vector <vector <int> > &G) {
 	// TODO: make dense graph, return structure?
 }
 
 int main() {
-	vector<vector <int> > G1(maxVertices);
-	vector<vector <int> > G2(maxVertices);
+	vector<vector <int> > G1(MAXVERTICES);
+	vector<vector <int> > G2(MAXVERTICES);
 	makeSparseGraph(G1);
+	printGraph(G1);
 
-	// want adjacency list or matrix for graph?
-	// vectors?  need random number generation - will need a good one.
+	getRand(0,100);
 
 	return 0;
 }
