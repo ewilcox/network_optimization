@@ -11,7 +11,7 @@ using namespace std;
 #ifndef MY_RAND_HPP_
 #define MY_RAND_HPP_
 
-random_device rd;
+random_device rd;	// seed for random generator mt19937 -> Mersenne Twister 19937
 /*
  * Generates a custom random number between integer values: min and max
  * Based on the C++11 random number implementation

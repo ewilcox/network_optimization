@@ -14,46 +14,53 @@
 
 using namespace std;
 
-const int MAXVERTICES = 10;  	// will be 5000
+const int MAXVERTICES = 9;  	// will be 5000 (4999 due to starting at 0)
 const int SPARSECONNECT = 6;	// number of sparse connections
+const int MAXWEIGHT = 1000;		// max weight of graph edges
 
-void printGraph(vector <vector <int> > G) {
+struct edges {
+	int connection;
+	int weight;
+};
+
+void printGraph(vector <vector <edges> > G) {
 	unsigned int i, j;
 	for (i=0; i<MAXVERTICES; i++) {
 		cout << "v[" << i << "] = ";
-		for (j=0; j<G.at(i).size(); j++)
-			cout << G.at(i).at(j) << "  ";
+		for (j=0; j<G.at(i).size(); j++) {
+			cout<<'('<<G.at(i).at(j).connection<<'|'<<G.at(i).at(j).weight << ")  ";
+		}
 		cout << endl;
 	}
 }
-void makeSparseGraph(vector <vector <int> > &G) {
+// Finds duplicate number in the vector, return true if already exists in vector
+bool duplicate(vector<edges> v, int vertex, int num) {
+	if (vertex == num) return true;		// prevents cycle to same vertex
+	for (u_int i=0; i<v.size(); ++i)
+		if (v.at(i).connection == num) return true;
+	return false;
+}
+// Makes sparse graph with number of connections per node = const SPARSECONNECT
+void makeSparseGraph(vector <vector <edges> > &G) {
+	edges e;
 	for (int i=0; i<MAXVERTICES; i++) {
 		for (int j=0; j<SPARSECONNECT; j++) {
-			//G.at(i).push_back(getRand(0,MAXVERTICES));
+			e.connection = getRand(0,MAXVERTICES);
+			e.weight = getRand(1,MAXWEIGHT);
+			while (duplicate(G.at(i),i,e.connection)) e.connection = getRand(0,MAXVERTICES);
+			G.at(i).push_back(e);
 		}
 	}
 }
-void makeDenseGraph(vector <vector <int> > &G) {
+void makeDenseGraph(vector <vector <edges> > &G) {
 	// TODO: make dense graph, return structure?
 }
 
 int main() {
-	vector<vector <int> > G1(MAXVERTICES);
-	vector<vector <int> > G2(MAXVERTICES);
+	vector<vector <edges> > G1(MAXVERTICES);
+	vector<vector <edges> > G2(MAXVERTICES);
 	makeSparseGraph(G1);
 	printGraph(G1);
-
-	int a[20];
-	for (int i=0; i<20; ++i) a[i]=0;
-	for (int i=0; i<500; ++i) ++a[getRand(0,19)];
-	for (int i=0; i<20; ++i) {
-		cout << "a[" << i << "] ";
-		for (int j=0; j<a[i]; ++j)
-			cout << '*';
-		cout << endl;
-	}
-
-	getRand(0,100);
 
 	return 0;
 }
