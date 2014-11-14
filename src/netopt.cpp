@@ -22,7 +22,10 @@ struct edges {
 	int connection;
 	int weight;
 };
-
+void printline(char c, int num) {
+	for (int i=0; i<num; ++i) cout << c;
+	cout << endl;
+}
 void printGraph(vector <vector <edges> > G) {
 	unsigned int i, j;
 	for (i=0; i<MAXVERTICES; i++) {
@@ -53,14 +56,25 @@ void makeSparseGraph(vector <vector <edges> > &G) {
 	}
 }
 void makeDenseGraph(vector <vector <edges> > &G) {
-	// TODO: make dense graph, return structure?
+	edges e;
+	for (int i=0; i<MAXVERTICES; i++) {
+		for (int j=0; j<MAXVERTICES*0.2; j++) {
+			e.connection = getRand(0,MAXVERTICES);
+			e.weight = getRand(1,MAXWEIGHT);
+			while (duplicate(G.at(i),i,e.connection)) e.connection = getRand(0,MAXVERTICES);
+			G.at(i).push_back(e);
+		}
+	}
 }
 
 int main() {
 	vector<vector <edges> > G1(MAXVERTICES);
 	vector<vector <edges> > G2(MAXVERTICES);
 	makeSparseGraph(G1);
+	makeDenseGraph(G2);
 	printGraph(G1);
+	printline('-',100);
+	printGraph(G2);
 
 	return 0;
 }
