@@ -43,6 +43,16 @@ int main() {
 	makeSparseGraph(G1);
 	printGraph(G1);
 
+	int a[20];
+	for (int i=0; i<20; ++i) a[i]=0;
+	for (int i=0; i<500; ++i) ++a[getRand(0,19)];
+	for (int i=0; i<20; ++i) {
+		cout << "a[" << i << "] ";
+		for (int j=0; j<a[i]; ++j)
+			cout << '*';
+		cout << endl;
+	}
+
 	getRand(0,100);
 
 	return 0;
