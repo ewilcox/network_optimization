@@ -39,6 +39,7 @@ void printGraph(vector <vertex> G) {
 		}
 		cout << endl;
 	}
+	printline('-',MAXVERTICES);
 }
 // Print graph in matrix format for checking (row,col)
 void printAsMatrix(vector<vertex> G) {
@@ -85,22 +86,22 @@ int my_find(vector<edge> e, int match) {
 	}
 	return -1;
 }
-// Makes sparse graph with number of connections per node = const SPARSECONNECT
+// Makes sparse graph with number of connections per node
 // No loops on 1 node, undirected (each edge = new edge in that node) and occasionally
 // reached stale loop at end, so remove random element from start and replace
 // This method creates column first order, but can end up short on total matrix
-void makeSparseGraph(vector<vertex> &G) {
+void makeGraph(vector<vertex> &G, u_int connections) {
 	edge newedge1, newedge2;
 	int badLoop = 0, temp;
-	for (int j=0; j<SPARSECONNECT; ++j) {
+	for (u_int j=0; j<connections; ++j) {
 		for (int i=0; i<MAXVERTICES; i++) {
-			if (G.at(i).edges.size() >= SPARSECONNECT) continue;
+			if (G.at(i).edges.size() >= connections) continue;
 			newedge1.connection = getRand(0,MAXVERTICES-1);
 			newedge1.weight = getRand(1,MAXWEIGHT);
 			newedge2.connection = i;
 			newedge2.weight = newedge1.weight;
 			while (duplicate(G.at(i).edges, i, newedge1) ||
-					G.at(newedge1.connection).edges.size() >= SPARSECONNECT) {		// keep random weight, get new connect
+					G.at(newedge1.connection).edges.size() >= connections) {		// keep random weight, get new connect
 				newedge1.connection = getRand(0,MAXVERTICES-1);
 				newedge2.connection = i;
 				++badLoop;
@@ -118,28 +119,54 @@ void makeSparseGraph(vector<vertex> &G) {
 	}
 }
 
-void makeDenseGraph(vector <vertex> &G) {
-
-	//	edge e;
-//	for (int i=0; i<MAXVERTICES; i++) {
-//		for (int j=0; j<MAXVERTICES*0.2; j++) {
-//			e.connection = getRand(0,MAXVERTICES);
-//			e.weight = getRand(1,MAXWEIGHT);
-//			while (duplicate(G.at(i),i,e.connection)) e.connection = getRand(0,MAXVERTICES);
-//			G.at(i).push_back(e);
-//		}
-//	}
+// MINMUM function, returns top level element of the heap
+vertex minHeap(vector<vertex> heap) {
+	if (heap.size() > 0) return heap[0];
+	else {
+		cout << "Error - heap is empty when returning minHeap()\n";
+		vertex error;
+		error.value = -1;
+		return error;
+	}
 }
 
+void insertHeap(vector<vertex> &heap, vertex v) {
+	heap.push_back(v);
+//	heapify(heap);
+}
+
+void deleteHeap(vertex heap[], vertex v) {
+
+}
+
+void heapify(vector<vertex> heap) {
+
+}
+void printHeap(vector<vertex> heap) {
+	for (u_int i=0; i<heap.size(); ++i) {
+		cout << "H[" << i << "]=" << heap[i].value << "      ";
+	}
+	cout << endl;
+}
 int main() {
 	vector<vertex> G1(MAXVERTICES);
 	vector<vertex> G2(MAXVERTICES);
-	makeSparseGraph(G1);
-//	makeDenseGraph(G2);
-	printGraph(G1);
-//	printline('-',100);
-	printAsMatrix(G1);
+	makeGraph(G1,6);					// make sparse graph
+	makeGraph(G2,MAXVERTICES*0.20);		// make dense graph
+//	printGraph(G1);						// debug statements for graph and matrix views
+//	printAsMatrix(G1);
 //	printGraph(G2);
+//	printAsMatrix(G2);					// to here.
+
+	vertex v;							// create new struct for heap creation and testing.
+	vector<vertex> heap;
+	for (int i=0; i<20; ++i) {
+		v.value = i;
+		v.value = getRand(1,MAXWEIGHT);
+		insertHeap(heap, v);
+		printHeap(heap);
+		printline('-',20*heap.size());
+	}
 
 	return 0;
 }
