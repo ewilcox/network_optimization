@@ -130,18 +130,55 @@ vertex minHeap(vector<vertex> heap) {
 	}
 }
 
+// Insert element in correct place in heap so don't need sort
+// vector takes care of size so don't need to maintain count
 void insertHeap(vector<vertex> &heap, vertex v) {
 	heap.push_back(v);
+	heapify(heap);
+}
+
+void deleteHeap(vector<vertex> heap, vertex v) {
+	heap[0] = heap.back();
+//	heapsort(heap);
+}
+
+// Swapping function vertex
+void swapem(vertex a, vertex b) {
+	vertex temp;
+	temp = a;
+	a = b;
+	b = a;
+}
+//void heapsort(vector<vertex> heap) {
 //	heapify(heap);
-}
-
-void deleteHeap(vertex heap[], vertex v) {
-
-}
-
+//	int end = heap.size()-1;
+//	while (end > 0) {
+//		swap(heap[end],heap[0]);
+//		--end;
+//
+//	}
+//}
 void heapify(vector<vertex> heap) {
 
 }
+//void heapify(vector<vertex> heap) {
+//	int start, parent, child, end;
+//	end = heap.size()-1;
+//	start = (end-1/2);
+//	while (start >= 0) {
+//		parent = start;
+//		while (parent * 2 + 1 <= end) {
+//			child = parent * 2 + 1;
+//			if (child + 1 <= end && heap[child].value < heap[child + 1].value)
+//				++child;
+//			if (heap[parent].value < heap[child].value) {
+//				swapem(heap[parent],heap[child]);
+//				parent = child;
+//			}
+//		}
+//	}
+//	--start;
+//}
 void printHeap(vector<vertex> heap) {
 	for (u_int i=0; i<heap.size(); ++i) {
 		cout << "H[" << i << "]=" << heap[i].value << "      ";
