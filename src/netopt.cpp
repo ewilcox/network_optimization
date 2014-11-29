@@ -148,7 +148,7 @@ void printTree(vector<vertex> heap) {
 		}
 		int iMaxWidth = (1 << iDepth);
 		int iCharWidth = 4*iMaxWidth;
-		int iEntry = 0;
+		u_int iEntry = 0;
 		for (int i = 0; i < iDepth; ++i) {
 			int iPowerOf2 = (1 << i);
 			for (int j = 0; j < iPowerOf2; ++j) {
@@ -245,25 +245,57 @@ vector<vertex> heapsort(vector<vertex> &heap) {
 	}
 	return sortedHeap;
 }
+// Dijkstra's algorithm without heap structure (regular)
+void Dijkstra(vector<vertex> G) {
+	cout << "reached";
+}
+// Dijkstra's algorithm modified to use heap structure
+void Dijkstra_heap(vector<vertex> G) {
+
+}
+// Dijkstra's algorithm with edges sorted by Heapsort
+void Kruskal(vector<vertex> G) {
+
+}
 int main() {
 	vector<vertex> G1(MAXVERTICES);
 	vector<vertex> G2(MAXVERTICES);
 	makeGraph(G1,6);					// make sparse graph
 	makeGraph(G2,MAXVERTICES*0.20);		// make dense graph
 
+	// Run 1,2,3
+	// 1-Max Capacity Dijkstra's without heap structure
+	// 2-Max Capacity Dijkstra's with heap structure
+	// 3-Max Capacity Kruskal's with edges sorted by HeapSort
+	switch (3) {
+					case 1:
+						cout << "Case 1: Max Capacity using Dijkstra's algorithm without the heap structure\n";
+						Dijkstra(G1);
+						break;
+					case 2:
+						cout << "case 2: Max Capacity using Dijkstra's algorithm with the heap structure modification\n";
+						Dijkstra_heap(G1);
+						break;
+					case 3:
+						cout << "case 3: Max Capacity using Kruskal's algorithm with edges sorted by Heapsort\n";
+						Kruskal(G1);
+						break;
+	};
+
 //	printGraph(G1);						// debug statements for graph and matrix views
 //	printAsMatrix(G1);
 //	printGraph(G2);
 //	printAsMatrix(G2);
 
-	vertex v;							// create new struct for heap creation and testing.
-	vector<vertex> heap;
-	for (int i=0; i<20; ++i) {
-		v.value = i;
-		v.value = getRand(1,MAXWEIGHT);
-		heap.push_back(v);
-//		insertHeap(heap, v);
-	}
+	// Testing for heap structures
+//	vertex v;
+//	vector<vertex> heap;
+//	for (int i=0; i<20; ++i) {
+//		v.value = i;
+//		v.value = getRand(1,MAXWEIGHT);
+//		heap.push_back(v);
+////		insertHeap(heap, v);		// specific stmt for testing heapify'd structure as it was created - commented out for heapsort testing.
+//	}
 
 	// Testing data for heapsort function
 //	printTree(heap);
