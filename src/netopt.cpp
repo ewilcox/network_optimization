@@ -119,6 +119,14 @@ void makeGraph(vector<vertex> &G, u_int connections) {
 	}
 }
 
+// Swapping function vertex
+void swapem(vertex &a, vertex &b) {
+	vertex temp;
+	temp = a;
+	a = b;
+	b = temp;
+}
+
 // MINMUM function, returns top level element of the heap
 vertex minHeap(vector<vertex> heap) {
 	if (heap.size() > 0) return heap[0];
@@ -127,6 +135,16 @@ vertex minHeap(vector<vertex> heap) {
 		vertex error;
 		error.value = -1;
 		return error;
+	}
+}
+
+void heapify(vector<vertex> &heap) {
+	int current, parent;
+	current = heap.size()-1;	// set current to last node (end of array)
+	while (current >= 0) {
+		parent = (current-1)/2;		// set parent to root of current
+		if (heap[current].value < heap[parent].value) swapem(heap[current],heap[parent]);
+		--current;					// cycle down in nodes until reach root
 	}
 }
 
@@ -142,43 +160,6 @@ void deleteHeap(vector<vertex> heap, vertex v) {
 //	heapsort(heap);
 }
 
-// Swapping function vertex
-void swapem(vertex a, vertex b) {
-	vertex temp;
-	temp = a;
-	a = b;
-	b = a;
-}
-//void heapsort(vector<vertex> heap) {
-//	heapify(heap);
-//	int end = heap.size()-1;
-//	while (end > 0) {
-//		swap(heap[end],heap[0]);
-//		--end;
-//
-//	}
-//}
-void heapify(vector<vertex> heap) {
-
-}
-//void heapify(vector<vertex> heap) {
-//	int start, parent, child, end;
-//	end = heap.size()-1;
-//	start = (end-1/2);
-//	while (start >= 0) {
-//		parent = start;
-//		while (parent * 2 + 1 <= end) {
-//			child = parent * 2 + 1;
-//			if (child + 1 <= end && heap[child].value < heap[child + 1].value)
-//				++child;
-//			if (heap[parent].value < heap[child].value) {
-//				swapem(heap[parent],heap[child]);
-//				parent = child;
-//			}
-//		}
-//	}
-//	--start;
-//}
 void printHeap(vector<vertex> heap) {
 	for (u_int i=0; i<heap.size(); ++i) {
 		cout << "H[" << i << "]=" << heap[i].value << "      ";
