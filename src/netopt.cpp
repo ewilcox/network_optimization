@@ -137,7 +137,46 @@ vertex minHeap(vector<vertex> heap) {
 		return error;
 	}
 }
-
+// Method to print heap out in tree structure for debugging & evaluation
+// This function not part of homework - taken directly from online site
+// at http://xoax.net/comp_sci/crs/algorithms/lessons/Lesson9/
+void printTree(vector<vertex> heap) {
+	// Find the largest power of two, That is the depth
+		int iDepth = 0;
+		int iCopy = heap.size();
+		while (iCopy > 0) {
+			iCopy >>= 1;
+			++iDepth;
+		}
+		int iMaxWidth = (1 << iDepth);
+		int iCharWidth = 4*iMaxWidth;
+		int iEntry = 0;
+		for (int i = 0; i < iDepth; ++i) {
+			int iPowerOf2 = (1 << i);
+			for (int j = 0; j < iPowerOf2; ++j) {
+				int iSpacesBefore = ((iCharWidth/(1 << (i + 1))) - 1);
+				 // Spaces before number
+				for (int k = 0; k < iSpacesBefore; ++k) {
+					cout << " ";
+				}
+				 // Output an extra space if the number is less than 10
+				if (iEntry < 10) {
+					cout << " ";
+				}
+				 // Output the entry and the spaces after it
+				cout << heap[iEntry].value;
+				++iEntry;
+				if (iEntry >= heap.size()) {
+					cout << endl;
+					return;
+				}
+				for (int k = 0; k < iSpacesBefore; ++k) {
+					cout << " ";
+				}
+			}
+			cout << endl << endl;
+		}
+}
 void heapify(vector<vertex> &heap) {
 	int current, parent;
 	current = heap.size()-1;	// set current to last node (end of array)
@@ -148,6 +187,22 @@ void heapify(vector<vertex> &heap) {
 	}
 }
 
+// Now sort down - called from deleteHeap with index
+void heapifyDown(vector<vertex> &heap, int i) {
+	int parent, end, child;
+	parent = i;
+	end = heap.size()-1;
+	while (parent * 2 + 1 <= end) {
+		child = parent * 2 + 1;
+		if (child+1 <= end && heap[child].value > heap[child+1].value) ++child;
+		if (heap[parent].value > heap[child].value) {
+			swapem(heap[parent],heap[child]);
+			parent = child;
+		}
+		else return;//parent = child;
+	}
+}
+
 // Insert element in correct place in heap so don't need sort
 // vector takes care of size so don't need to maintain count
 void insertHeap(vector<vertex> &heap, vertex v) {
@@ -155,9 +210,14 @@ void insertHeap(vector<vertex> &heap, vertex v) {
 	heapify(heap);
 }
 
-void deleteHeap(vector<vertex> heap, vertex v) {
-	heap[0] = heap.back();
-//	heapsort(heap);
+void deleteHeap(vector<vertex> &heap, int idx) {
+	if (heap.size() <= 0) {
+		cout << "Error, heap empty on deleteHeap() call!!\n";
+		return;
+	}
+	swapem(heap[idx],heap[heap.size()-1]);
+	heap.pop_back();
+	heapifyDown(heap, idx);
 }
 
 void printHeap(vector<vertex> heap) {
@@ -182,9 +242,43 @@ int main() {
 		v.value = i;
 		v.value = getRand(1,MAXWEIGHT);
 		insertHeap(heap, v);
-		printHeap(heap);
-		printline('-',20*heap.size());
 	}
 
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,0);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
+	printTree(heap);
+	printline('-',20*heap.size());
+	deleteHeap(heap,2);
 	return 0;
 }
