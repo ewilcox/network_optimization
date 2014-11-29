@@ -118,7 +118,6 @@ void makeGraph(vector<vertex> &G, u_int connections) {
 		}
 	}
 }
-
 // Swapping function vertex
 void swapem(vertex &a, vertex &b) {
 	vertex temp;
@@ -126,7 +125,6 @@ void swapem(vertex &a, vertex &b) {
 	a = b;
 	b = temp;
 }
-
 // MINMUM function, returns top level element of the heap
 vertex minHeap(vector<vertex> heap) {
 	if (heap.size() > 0) return heap[0];
@@ -186,7 +184,16 @@ void heapify(vector<vertex> &heap) {
 		--current;					// cycle down in nodes until reach root
 	}
 }
-
+// Now sort up - for heapsort function
+void heapifyUp(vector<vertex> &heap, int start) {
+	int current, parent;
+	current = heap.size()-1;	// set current to last node (end of array)
+	while (current >= start) {
+		parent = (current-1)/2;		// set parent to root of current
+		if (heap[current].value < heap[parent].value) swapem(heap[current],heap[parent]);
+		--current;					// cycle down in nodes until reach start
+	}
+}
 // Now sort down - called from deleteHeap with index
 void heapifyDown(vector<vertex> &heap, int i) {
 	int parent, end, child;
@@ -202,14 +209,12 @@ void heapifyDown(vector<vertex> &heap, int i) {
 		else return;//parent = child;
 	}
 }
-
 // Insert element in correct place in heap so don't need sort
 // vector takes care of size so don't need to maintain count
 void insertHeap(vector<vertex> &heap, vertex v) {
 	heap.push_back(v);
 	heapify(heap);
 }
-
 void deleteHeap(vector<vertex> &heap, int idx) {
 	if (heap.size() <= 0) {
 		cout << "Error, heap empty on deleteHeap() call!!\n";
@@ -219,31 +224,54 @@ void deleteHeap(vector<vertex> &heap, int idx) {
 	heap.pop_back();
 	heapifyDown(heap, idx);
 }
-
 void printHeap(vector<vertex> heap) {
 	for (u_int i=0; i<heap.size(); ++i) {
 		cout << "H[" << i << "]=" << heap[i].value << "      ";
 	}
 	cout << endl;
 }
+// Heapsort function
+vector<vertex> heapsort(vector<vertex> &heap) {
+	vector<vertex> sortedHeap;
+	heapify(heap);
+	cout << "heap[0]: " << heap[0].value << endl;
+	int end = heap.size()-1;
+	while (end > 0) {
+		sortedHeap.push_back(heap[0]);
+		swapem(heap[0],heap[end]);		// not using deleteHeap here because we have to re-heapify anyway
+		heap.pop_back();				// instead just push to new storage, swap to back and pop.
+		heapify(heap);
+		--end;
+	}
+	return sortedHeap;
+}
 int main() {
 	vector<vertex> G1(MAXVERTICES);
 	vector<vertex> G2(MAXVERTICES);
 	makeGraph(G1,6);					// make sparse graph
 	makeGraph(G2,MAXVERTICES*0.20);		// make dense graph
+
 //	printGraph(G1);						// debug statements for graph and matrix views
 //	printAsMatrix(G1);
 //	printGraph(G2);
-//	printAsMatrix(G2);					// to here.
+//	printAsMatrix(G2);
 
 	vertex v;							// create new struct for heap creation and testing.
 	vector<vertex> heap;
 	for (int i=0; i<20; ++i) {
 		v.value = i;
 		v.value = getRand(1,MAXWEIGHT);
-		insertHeap(heap, v);
+		heap.push_back(v);
+//		insertHeap(heap, v);
 	}
 
+	// Testing data for heapsort function
+//	printTree(heap);
+//	printline('-',heap.size()*20);
+//	heap = heapsort(heap);
+//	printTree(heap);
+
+/*	// Testing data for heap insert/delete/min stuff
 	printTree(heap);
 	printline('-',20*heap.size());
 	deleteHeap(heap,0);
@@ -280,5 +308,6 @@ int main() {
 	printTree(heap);
 	printline('-',20*heap.size());
 	deleteHeap(heap,2);
+	*/
 	return 0;
 }
