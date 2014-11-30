@@ -14,9 +14,11 @@
 
 using namespace std;
 
-const int MAXVERTICES = 104;
+const int MAXVERTICES = 10;
 const int SPARSECONNECT = 6;	// number of sparse connections
 const int MAXWEIGHT = 1000;		// max weight of graph edges
+
+enum {unseen, intree, fringe};
 
 struct edge {
 	int connection;
@@ -25,6 +27,13 @@ struct edge {
 struct vertex {
 	vector <edge> edges;
 	int value;
+	int status;
+};
+struct connect {		// struct used for search space exploration
+	int from;
+	int index;
+	int to;
+	int weight;
 };
 void printline(char c, int num) {
 	for (int i=0; i<num; ++i) cout << c;
@@ -77,7 +86,8 @@ bool duplicate(vector<edge> e, int vertex, edge newedge) {
 	return false;
 }
 void printEdge(vector<edge> e) {
-	for (u_int i=0; i<e.size(); ++i) cout << e.at(i).connection << "  ";
+	for (auto v : e) cout << v.connection << ":" << v.weight << "  ";
+	cout << endl;
 }
 // Find matching edge and return index or -1 if not in edges list
 int my_find(vector<edge> e, int match) {
@@ -117,6 +127,12 @@ void makeGraph(vector<vertex> &G, u_int connections) {
 			G.at(newedge1.connection).edges.push_back(newedge2);
 		}
 	}
+}
+// Swapping function edge
+void swapem(edge &a, edge &b) {
+	edge temp;
+	a = b;
+	b = temp;
 }
 // Swapping function vertex
 void swapem(vertex &a, vertex &b) {
@@ -245,9 +261,95 @@ vector<vertex> heapsort(vector<vertex> &heap) {
 	}
 	return sortedHeap;
 }
+int min(vector<vertex> V) {
+	int answer = MAXVERTICES+1;
+	for (u_int i=0; i<) {
+		if (v.value < answer) answer = v.value;
+	}
+	return answer;
+}
+//connect min(vertex v) {
+//	connect answer;
+//	answer.weight = MAXWEIGHT+1;
+//	answer.index = -1;
+//	for (u_int i=0; i<v.edges.size(); ++i) {
+//		if (v.edges[i].weight < answer.weight) {
+//			answer.weight = v.edges[i].weight;
+////			current = e.weight;
+//			answer.to = v.edges[i].connection;
+//			answer.index = i;
+//		}
+//	}
+//	if (answer.index == -1) cout << "Error - returning -1 for edge in min() fct\n";
+//	return answer;
+//}
+
+//void Dijkstra(vector<vertex> G, int start, int end) {
+//	printEdge(G[start].edges);
+//	connect n = min(G[start]);
+//	cout << "node[" << n.index << "] "<<n.connection<<":"<<n.weight<<endl;
+//
+//}
+//bool fringes(edge e) {
+//	for (auto e : v.edges) {
+//		if ()
+//	}
+//}
 // Dijkstra's algorithm without heap structure (regular)
-void Dijkstra(vector<vertex> G) {
-	cout << "reached";
+void Dijkstra(vector<vertex> G, int start, int end) {
+	int i, n = 0;
+	connect v;
+	connect temp;
+	bool done = false;
+	int dad[MAXVERTICES] = {-1};
+	for (auto v : G) v.status = unseen;
+	G[start].status = intree;
+	G[start].value = 0;
+	dad[start] = NULL;
+	for (auto e : G[start].edges) {
+		G[e.connection].status = fringe;
+		dad[e.connection] = start;
+		G[e.connection].value = e.weight;
+	}
+	vector<connect> fringes;
+	for (auto e : G[start].edges) {
+		temp.from = start;
+		temp.to = e.connection;
+		temp.weight = e.weight;
+		fringes.push_back(temp);
+	}
+	while (n < MAXVERTICES) {
+		v = min(G[start]);
+//		G[start].edges[v.connection].weight = MAXWEIGHT+1;
+		cout << "v: " << v.to << "," << v.weight << "  \n";
+		G[v.to].status = intree;
+		cout << "G["<<v.to<<"] = intree, looping through edges:\n";
+		for (i=0; i<G[v.to].edges.size(); ++i) {
+			if (G[i].status == unseen) {
+				cout << "G["<<i<<"] = unseen, .... = fringe and dad["<<v.to<<"] = "<<start<<":\n";
+				G[v.to].status = fringe;
+				dad[v.to] = start;
+				G[v.to].value = G[start].value + v.weight;
+			}
+			else if (G[v.to].status == fringe && G[v.to].value < G[start].value + v.weight) {
+				cout << "in else if...\n";
+				G[v.to].value = G[start].value + v.weight;
+				dad[v.to] = start;
+			}
+			++n;
+			cout << "start was " << start << " and is now " << v.to << endl;
+			start = v.to;
+
+		}
+//		if (v.index == -1) done = true;
+//		printEdge(G[start].edges);
+//		cout << "min = " << min(G[start]) << endl;
+//		done = true;
+	}
+	printAsMatrix(G);
+	for (int i=0; i<MAXVERTICES; ++i) {
+		cout << "dad[" << i << "] " << dad[i] << endl;
+	}
 }
 // Dijkstra's algorithm modified to use heap structure
 void Dijkstra_heap(vector<vertex> G) {
@@ -267,10 +369,10 @@ int main() {
 	// 1-Max Capacity Dijkstra's without heap structure
 	// 2-Max Capacity Dijkstra's with heap structure
 	// 3-Max Capacity Kruskal's with edges sorted by HeapSort
-	switch (3) {
+	switch (1) {
 					case 1:
 						cout << "Case 1: Max Capacity using Dijkstra's algorithm without the heap structure\n";
-						Dijkstra(G1);
+						Dijkstra(G1, 0, 5);
 						break;
 					case 2:
 						cout << "case 2: Max Capacity using Dijkstra's algorithm with the heap structure modification\n";
