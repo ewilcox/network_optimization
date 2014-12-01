@@ -352,8 +352,8 @@ void Dijkstra(vector<vertex> G, int start, int end) {
 				G[e.to].status = fringe;
 				cout << "setting dad["<<e.to<<"] to ["<<e.from<<"]\n";
 				dad[e.to] = e.from;
-				cout << "setting G["<<v<<"].value to G["<<e.from<<"].value ("<<G[e.from].value<<") + e.weight ("<< e.weight << ")\n";//list["<<v<<"].value("<<list[v].value<<") + e.weight:("<<e.weight<<")\n";
-				G[v].value = G[e.from].value + e.weight;//list[v].value + e.weight;
+				cout << "setting G["<<e.to<<"].value to G["<<v<<"].value ("<<G[v].value<<") + e.weight ("<< e.weight << ")\n";//list["<<v<<"].value("<<list[v].value<<") + e.weight:("<<e.weight<<")\n";
+				G[e.to].value = G[v].value + e.weight;//list[v].value + e.weight;
 				list.push_back(G[e.to]);
 			}
 			else if (G[e.to].status == fringe && G[e.to].value < G[v].value + e.weight) {
