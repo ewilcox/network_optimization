@@ -10,6 +10,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <algorithm>
 #include "my_rand.hpp"
 
 using namespace std;
@@ -17,21 +18,25 @@ using namespace std;
 const int MAXVERTICES = 10;
 const int SPARSECONNECT = 6;	// number of sparse connections
 const int MAXWEIGHT = 1000;		// max weight of graph edges
+//int g[MAXVERTICES];
+//int wt[MAXVERTICES];
+//int dad[MAXVERTICES];
 
 enum {unseen, intree, fringe};
 
 struct edge {
-	int connection;
+	int from;
+	int to;
 	int weight;
 };
 struct vertex {
 	vector <edge> edges;
+	int index;
 	int value;
 	int status;
 };
 struct connect {		// struct used for search space exploration
 	int from;
-	int index;
 	int to;
 	int weight;
 };
@@ -41,14 +46,25 @@ void printline(char c, int num) {
 }
 void printGraph(vector <vertex> G) {
 	u_int i, j;
-	for (i=0; i<MAXVERTICES; i++) {
-		cout << "v[" << i << "] = ";
-		for (j=0; j<G.at(i).edges.size(); j++) {
-			cout<<'('<<G.at(i).edges.at(j).connection<<'|'<<G.at(i).edges.at(j).weight << ")  ";
+	for (i=0; i<G.size(); i++) {
+		cout << "v[" << G[i].index << "] "<<G[i].value<<" = ";
+		for (j=0; j<G[i].edges.size(); j++) {
+			cout<<'('<< G[i].edges[j].from << '-' << G[i].edges[j].to<<'|'<<G[i].edges[j].weight << ")  ";
 		}
 		cout << endl;
 	}
 	printline('-',MAXVERTICES);
+}
+void printlist(vector<vertex> V) {
+	int i=0;
+	for (auto v : V) {
+		cout << "v[" << v.index << "] = ";
+		for (auto e : v.edges) {
+			cout << e.to << "|" << e.weight << " - ";
+		}
+		++i;
+		cout << endl;
+	}
 }
 // Print graph in matrix format for checking (row,col)
 void printAsMatrix(vector<vertex> G) {
@@ -58,7 +74,7 @@ void printAsMatrix(vector<vertex> G) {
 	for (row=0; row<MAXVERTICES; ++row) {
 		for (auto&& v : G) {
 			for (auto &col : v.edges) {
-				graph[row][col.connection] = col.weight;
+				graph[row][col.to] = col.weight;
 			}
 			++row;
 		}
@@ -80,19 +96,19 @@ void printAsMatrix(vector<vertex> G) {
 }
 // Finds duplicate number in the vector, return true if already exists in vector
 bool duplicate(vector<edge> e, int vertex, edge newedge) {
-	if (vertex == newedge.connection) return true;		// prevents cycle to same vertex
+	if (vertex == newedge.to) return true;		// prevents cycle to same vertex
 	for (u_int i=0; i<e.size(); ++i)
-		if (e.at(i).connection == newedge.connection) return true;
+		if (e.at(i).to == newedge.to) return true;
 	return false;
 }
 void printEdge(vector<edge> e) {
-	for (auto v : e) cout << v.connection << ":" << v.weight << "  ";
+	for (auto v : e) cout << v.to << ":" << v.weight << "  ";
 	cout << endl;
 }
 // Find matching edge and return index or -1 if not in edges list
 int my_find(vector<edge> e, int match) {
 	for (u_int i=0; i<e.size(); ++i) {
-		if (match == e.at(i).connection) return i;
+		if (match == e.at(i).to) return i;
 	}
 	return -1;
 }
@@ -106,27 +122,31 @@ void makeGraph(vector<vertex> &G, u_int connections) {
 	for (u_int j=0; j<connections; ++j) {
 		for (int i=0; i<MAXVERTICES; i++) {
 			if (G.at(i).edges.size() >= connections) continue;
-			newedge1.connection = getRand(0,MAXVERTICES-1);
+			newedge1.to = getRand(0,MAXVERTICES-1);
 			newedge1.weight = getRand(1,MAXWEIGHT);
-			newedge2.connection = i;
+			newedge1.from = i;
+			newedge2.to = i;
+			newedge2.from = newedge1.to;
 			newedge2.weight = newedge1.weight;
 			while (duplicate(G.at(i).edges, i, newedge1) ||
-					G.at(newedge1.connection).edges.size() >= connections) {		// keep random weight, get new connect
-				newedge1.connection = getRand(0,MAXVERTICES-1);
-				newedge2.connection = i;
+					G.at(newedge1.to).edges.size() >= connections) {		// keep random weight, get new connect
+				newedge1.to = getRand(0,MAXVERTICES-1);
+				newedge2.to = i;
+				newedge2.from = newedge1.to;
 				++badLoop;
 				if (badLoop >= 2*MAXVERTICES) {
-					temp = G.at(newedge1.connection).edges.front().connection;
-					G.at(newedge1.connection).edges.erase(G[newedge1.connection].edges.begin());
-					G[temp].edges.erase(G[temp].edges.begin()+my_find(G.at(temp).edges, newedge1.connection));
+					temp = G.at(newedge1.to).edges.front().to;
+					G.at(newedge1.to).edges.erase(G[newedge1.to].edges.begin());
+					G[temp].edges.erase(G[temp].edges.begin()+my_find(G.at(temp).edges, newedge1.to));
 					--j;	// decrement outside loop per set delete to ensure enough add's to graph
 				}
 			}
 			badLoop=0;
 			G.at(i).edges.push_back(newedge1);
-			G.at(newedge1.connection).edges.push_back(newedge2);
+			G.at(newedge1.to).edges.push_back(newedge2);
 		}
 	}
+	for (int i=0; i<MAXVERTICES; ++i) G[i].index = i;
 }
 // Swapping function edge
 void swapem(edge &a, edge &b) {
@@ -261,95 +281,96 @@ vector<vertex> heapsort(vector<vertex> &heap) {
 	}
 	return sortedHeap;
 }
-int min(vector<vertex> V) {
-	int answer = MAXVERTICES+1;
-	for (u_int i=0; i<) {
-		if (v.value < answer) answer = v.value;
+int max(vector<vertex> v) {
+	int current = -1;
+	int answer = -1;
+	for (u_int i=0; i<v.size(); ++i) {
+		if (v[i].value > current) {
+			current = v[i].value;
+			answer = i;
+		}
 	}
+	if (answer == -1) cout << "Error - returning -1 for edge in max() fct\n";
+	cout << "max() returning " << answer << " = " << current << endl;
 	return answer;
 }
-//connect min(vertex v) {
-//	connect answer;
-//	answer.weight = MAXWEIGHT+1;
-//	answer.index = -1;
-//	for (u_int i=0; i<v.edges.size(); ++i) {
-//		if (v.edges[i].weight < answer.weight) {
-//			answer.weight = v.edges[i].weight;
-////			current = e.weight;
-//			answer.to = v.edges[i].connection;
-//			answer.index = i;
-//		}
-//	}
-//	if (answer.index == -1) cout << "Error - returning -1 for edge in min() fct\n";
-//	return answer;
-//}
-
-//void Dijkstra(vector<vertex> G, int start, int end) {
-//	printEdge(G[start].edges);
-//	connect n = min(G[start]);
-//	cout << "node[" << n.index << "] "<<n.connection<<":"<<n.weight<<endl;
-//
-//}
-//bool fringes(edge e) {
-//	for (auto e : v.edges) {
-//		if ()
-//	}
-//}
-// Dijkstra's algorithm without heap structure (regular)
-void Dijkstra(vector<vertex> G, int start, int end) {
-	int i, n = 0;
-	connect v;
-	connect temp;
-	bool done = false;
-	int dad[MAXVERTICES] = {-1};
-	for (auto v : G) v.status = unseen;
-	G[start].status = intree;
-	G[start].value = 0;
-	dad[start] = NULL;
-	for (auto e : G[start].edges) {
-		G[e.connection].status = fringe;
-		dad[e.connection] = start;
-		G[e.connection].value = e.weight;
-	}
-	vector<connect> fringes;
-	for (auto e : G[start].edges) {
-		temp.from = start;
-		temp.to = e.connection;
-		temp.weight = e.weight;
-		fringes.push_back(temp);
-	}
-	while (n < MAXVERTICES) {
-		v = min(G[start]);
-//		G[start].edges[v.connection].weight = MAXWEIGHT+1;
-		cout << "v: " << v.to << "," << v.weight << "  \n";
-		G[v.to].status = intree;
-		cout << "G["<<v.to<<"] = intree, looping through edges:\n";
-		for (i=0; i<G[v.to].edges.size(); ++i) {
-			if (G[i].status == unseen) {
-				cout << "G["<<i<<"] = unseen, .... = fringe and dad["<<v.to<<"] = "<<start<<":\n";
-				G[v.to].status = fringe;
-				dad[v.to] = start;
-				G[v.to].value = G[start].value + v.weight;
-			}
-			else if (G[v.to].status == fringe && G[v.to].value < G[start].value + v.weight) {
-				cout << "in else if...\n";
-				G[v.to].value = G[start].value + v.weight;
-				dad[v.to] = start;
-			}
-			++n;
-			cout << "start was " << start << " and is now " << v.to << endl;
-			start = v.to;
-
-		}
-//		if (v.index == -1) done = true;
-//		printEdge(G[start].edges);
-//		cout << "min = " << min(G[start]) << endl;
-//		done = true;
-	}
-	printAsMatrix(G);
+void printDad(int dad[]) {
 	for (int i=0; i<MAXVERTICES; ++i) {
 		cout << "dad[" << i << "] " << dad[i] << endl;
 	}
+}
+void printPath(int dad[], int start, int end) {
+	printDad(dad);
+	cout << "Max Path from (" << start << ") to (" << end << ") is: ";
+	int done = -1;
+	vector<int> path;
+	int current = end;
+	while (current != start) {
+		path.push_back(dad[current]);
+		current = dad[current];
+	}
+	while (!path.empty()) {
+		cout << "["<< path.back() << "] -> ";
+		path.pop_back();
+	}
+	cout << '[' << end << "].\n";
+}
+// Dijkstra's algorithm without heap structure (regular)
+void Dijkstra(vector<vertex> G, int start, int end) {
+	printGraph(G);
+	int v;
+	vector<vertex> list;
+	int dad[MAXVERTICES];
+	for (int i=0; i<MAXVERTICES; ++i) dad[i] = -1;
+	for (auto &v : G) {
+		v.status = unseen;
+		v.value = 0;
+	}
+	G[start].status = intree;
+	G[start].value = MAXWEIGHT;
+	dad[start] = start;
+	for (auto &e : G[start].edges) {
+		G[e.to].status = fringe;
+		dad[e.to] = start;
+		G[e.to].value = e.weight;
+		list.push_back(G[e.to]);
+	}
+	while (list.size() > 0) {
+		v = max(list);
+		cout << "v: " << v << " index: " << list[v].index<< endl;
+		cout << "setting G["<< list[v].index <<"].status to intree\n";
+		G[list[v].index].status = intree;
+		printGraph(list);
+		cout << "looping through G["<<list[v].index<<"] (v["<<list[v].index<<"]) edges:\n";
+		for (auto &e : G[list[v].index].edges) {
+			cout << "if g["<<e.to<<"] unseen (state=" << G[e.to].status<<") then:\n";
+			if (G[e.to].status != unseen) { //output stmts for else below
+				cout << "G["<<e.to<<"].status =? fringe, G["<<e.to<<"].value="<<G[e.to].value<<" <? G["<<v<<"].value("<<G[v].value<<")+e.weight("<<e.weight<<")\n";
+			}
+			if (G[e.to].status == unseen) {
+				cout << "setting status G["<<e.to<<"] to fringe\n";
+				G[e.to].status = fringe;
+				cout << "setting dad["<<e.to<<"] to ["<<e.from<<"]\n";
+				dad[e.to] = e.from;
+				cout << "setting G["<<v<<"].value to G["<<e.from<<"].value ("<<G[e.from].value<<") + e.weight ("<< e.weight << ")\n";//list["<<v<<"].value("<<list[v].value<<") + e.weight:("<<e.weight<<")\n";
+				G[v].value = G[e.from].value + e.weight;//list[v].value + e.weight;
+				list.push_back(G[e.to]);
+			}
+			else if (G[e.to].status == fringe && G[e.to].value < G[v].value + e.weight) {
+				cout << "fringe\n";
+				cout << "erasing...begin + "<<v<<"...\n";
+				list.erase(list.begin()+v);
+				G[e.to].value = G[v].value + e.weight;
+				dad[e.to] = e.from;
+				list.push_back(G[e.to]);
+			}
+		}
+		printGraph(list);
+		cout << "erasing...begin + "<<v<<"...\n";
+		list.erase(list.begin()+v);
+		printGraph(list);
+	}
+	printPath(dad,start,end);
 }
 // Dijkstra's algorithm modified to use heap structure
 void Dijkstra_heap(vector<vertex> G) {
@@ -364,7 +385,6 @@ int main() {
 	vector<vertex> G2(MAXVERTICES);
 	makeGraph(G1,6);					// make sparse graph
 	makeGraph(G2,MAXVERTICES*0.20);		// make dense graph
-
 	// Run 1,2,3
 	// 1-Max Capacity Dijkstra's without heap structure
 	// 2-Max Capacity Dijkstra's with heap structure
@@ -373,6 +393,7 @@ int main() {
 					case 1:
 						cout << "Case 1: Max Capacity using Dijkstra's algorithm without the heap structure\n";
 						Dijkstra(G1, 0, 5);
+//						Dijkstra(G2, 0, 5);
 						break;
 					case 2:
 						cout << "case 2: Max Capacity using Dijkstra's algorithm with the heap structure modification\n";
@@ -383,65 +404,5 @@ int main() {
 						Kruskal(G1);
 						break;
 	};
-
-//	printGraph(G1);						// debug statements for graph and matrix views
-//	printAsMatrix(G1);
-//	printGraph(G2);
-//	printAsMatrix(G2);
-
-	// Testing for heap structures
-//	vertex v;
-//	vector<vertex> heap;
-//	for (int i=0; i<20; ++i) {
-//		v.value = i;
-//		v.value = getRand(1,MAXWEIGHT);
-//		heap.push_back(v);
-////		insertHeap(heap, v);		// specific stmt for testing heapify'd structure as it was created - commented out for heapsort testing.
-//	}
-
-	// Testing data for heapsort function
-//	printTree(heap);
-//	printline('-',heap.size()*20);
-//	heap = heapsort(heap);
-//	printTree(heap);
-
-/*	// Testing data for heap insert/delete/min stuff
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,0);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	printTree(heap);
-	printline('-',20*heap.size());
-	deleteHeap(heap,2);
-	*/
 	return 0;
 }
