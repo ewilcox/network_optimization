@@ -18,9 +18,6 @@ using namespace std;
 const int MAXVERTICES = 10;
 const int SPARSECONNECT = 6;	// number of sparse connections
 const int MAXWEIGHT = 1000;		// max weight of graph edges
-//int g[MAXVERTICES];
-//int wt[MAXVERTICES];
-//int dad[MAXVERTICES];
 
 enum {unseen, intree, fringe};
 
@@ -34,11 +31,6 @@ struct vertex {
 	int index;
 	int value;
 	int status;
-};
-struct connect {		// struct used for search space exploration
-	int from;
-	int to;
-	int weight;
 };
 void printline(char c, int num) {
 	for (int i=0; i<num; ++i) cout << c;
@@ -54,17 +46,6 @@ void printGraph(vector <vertex> G) {
 		cout << endl;
 	}
 	printline('-',MAXVERTICES);
-}
-void printlist(vector<vertex> V) {
-	int i=0;
-	for (auto v : V) {
-		cout << "v[" << v.index << "] = ";
-		for (auto e : v.edges) {
-			cout << e.to << "|" << e.weight << " - ";
-		}
-		++i;
-		cout << endl;
-	}
 }
 // Print graph in matrix format for checking (row,col)
 void printAsMatrix(vector<vertex> G) {
@@ -100,10 +81,6 @@ bool duplicate(vector<edge> e, int vertex, edge newedge) {
 	for (u_int i=0; i<e.size(); ++i)
 		if (e.at(i).to == newedge.to) return true;
 	return false;
-}
-void printEdge(vector<edge> e) {
-	for (auto v : e) cout << v.to << ":" << v.weight << "  ";
-	cout << endl;
 }
 // Find matching edge and return index or -1 if not in edges list
 int my_find(vector<edge> e, int match) {
@@ -148,9 +125,30 @@ void makeGraph(vector<vertex> &G, u_int connections) {
 	}
 	for (int i=0; i<MAXVERTICES; ++i) G[i].index = i;
 }
-// Swapping function edge
+// Function adds a path with random weights between start and end thus
+// ensuring there is at least 1 connection between any 2 vertices.
+// May add 2 paths (un-directed) to every vertex but 1st & last,
+// won't add duplicate paths or cycles.
+void addPath(vector<vertex> &G) {
+	edge e1, e2;
+	for (u_int i=0; i<MAXVERTICES-1; ++i) {
+		e1.from = i;
+		e1.to = i+1;
+		e2.from = i+1;
+		e2.to = i;
+		e1.weight = getRand(1,MAXWEIGHT);
+		e2.weight = e1.weight;
+		if (!duplicate(G[i].edges,i,e1)) {
+//			cout << "adding to v["<<i<<"] - edge from["<<e1.from<<"] to ["<<e1.to<<"]\nadding to v["<<i+1<<"] - edge from ["<<e2.from<<"] to ["<<e2.to<<"]\n";
+			G[i].edges.push_back(e1);
+			G[i+1].edges.push_back(e2);
+		}
+	}
+}
+// Swapping function for edges
 void swapem(edge &a, edge &b) {
 	edge temp;
+	temp = a;
 	a = b;
 	b = temp;
 }
@@ -161,11 +159,12 @@ void swapem(vertex &a, vertex &b) {
 	a = b;
 	b = temp;
 }
-// MINMUM function, returns top level element of the heap
-vertex minHeap(vector<vertex> heap) {
+// Top heap return function, returns top level element of the heap
+// This is min or max value depending on type of heap used.
+vertex rootHeap(vector<vertex> heap) {
 	if (heap.size() > 0) return heap[0];
 	else {
-		cout << "Error - heap is empty when returning minHeap()\n";
+		cout << "Error - heap is empty when returning rootHeap()\n";
 		vertex error;
 		error.value = -1;
 		return error;
@@ -211,38 +210,39 @@ void printTree(vector<vertex> heap) {
 			cout << endl << endl;
 		}
 }
+// Overloaded heapify for edges for Kruskal's algorithm
+void heapify(vector<edge> &heap) {
+	int current, parent;
+	current = heap.size()-1;	// set current to last node (end of array)
+	while (current >= 0) {
+		parent = (current-1)/2;		// set parent to root of current
+		if (heap[current].weight > heap[parent].weight) swapem(heap[current],heap[parent]);
+		--current;					// cycle down in nodes until reach root
+	}
+}
+// heapify for vector of vertex - for Dijkstra_heap function
 void heapify(vector<vertex> &heap) {
 	int current, parent;
 	current = heap.size()-1;	// set current to last node (end of array)
 	while (current >= 0) {
 		parent = (current-1)/2;		// set parent to root of current
-		if (heap[current].value < heap[parent].value) swapem(heap[current],heap[parent]);
+		if (heap[current].value > heap[parent].value) swapem(heap[current],heap[parent]);//< heap[parent].value) swapem(heap[current],heap[parent]);
 		--current;					// cycle down in nodes until reach root
 	}
 }
-// Now sort up - for heapsort function
-void heapifyUp(vector<vertex> &heap, int start) {
-	int current, parent;
-	current = heap.size()-1;	// set current to last node (end of array)
-	while (current >= start) {
-		parent = (current-1)/2;		// set parent to root of current
-		if (heap[current].value < heap[parent].value) swapem(heap[current],heap[parent]);
-		--current;					// cycle down in nodes until reach start
-	}
-}
 // Now sort down - called from deleteHeap with index
-void heapifyDown(vector<vertex> &heap, int i) {
+void moveDown(vector<vertex> &heap, int i) {
 	int parent, end, child;
 	parent = i;
 	end = heap.size()-1;
 	while (parent * 2 + 1 <= end) {
 		child = parent * 2 + 1;
-		if (child+1 <= end && heap[child].value > heap[child+1].value) ++child;
-		if (heap[parent].value > heap[child].value) {
+		if (child+1 <= end && heap[child].value < heap[child+1].value) ++child;//> heap[child+1].value) ++child;
+		if (heap[parent].value < heap[child].value) {//> heap[child].value) {
 			swapem(heap[parent],heap[child]);
 			parent = child;
 		}
-		else return;//parent = child;
+		else return;
 	}
 }
 // Insert element in correct place in heap so don't need sort
@@ -258,19 +258,26 @@ void deleteHeap(vector<vertex> &heap, int idx) {
 	}
 	swapem(heap[idx],heap[heap.size()-1]);
 	heap.pop_back();
-	heapifyDown(heap, idx);
+	moveDown(heap, idx);
 }
+// Overloaded to print heap list of edges
+void printHeap(vector<edge> heap) {
+	int i=0;
+	for (auto e : heap) {
+		cout <<"n["<<i++<< "]: from ["<<e.from<<"] to ["<<e.to<<"]: "<<e.weight<<endl;
+	}
+}
+// Overloaded to print heap list of vertices
 void printHeap(vector<vertex> heap) {
 	for (u_int i=0; i<heap.size(); ++i) {
 		cout << "H[" << i << "]=" << heap[i].value << "      ";
 	}
 	cout << endl;
 }
-// Heapsort function
-vector<vertex> heapsort(vector<vertex> &heap) {
-	vector<vertex> sortedHeap;
+// Heapsort function - designed to function for vector of type edge (heapsort edges)
+vector<edge> heapsort(vector<edge> &heap) {
+	vector<edge> sortedHeap;
 	heapify(heap);
-	cout << "heap[0]: " << heap[0].value << endl;
 	int end = heap.size()-1;
 	while (end > 0) {
 		sortedHeap.push_back(heap[0]);
@@ -281,6 +288,7 @@ vector<vertex> heapsort(vector<vertex> &heap) {
 	}
 	return sortedHeap;
 }
+// returns MAX value of all vertices in vector v (the index of the max)
 int max(vector<vertex> v) {
 	int current = -1;
 	int answer = -1;
@@ -302,7 +310,6 @@ void printDad(int dad[]) {
 void printPath(int dad[], int start, int end) {
 	printDad(dad);
 	cout << "Max Path from (" << start << ") to (" << end << ") is: ";
-	int done = -1;
 	vector<int> path;
 	int current = end;
 	while (current != start) {
@@ -353,14 +360,14 @@ void Dijkstra(vector<vertex> G, int start, int end) {
 				cout << "setting dad["<<e.to<<"] to ["<<e.from<<"]\n";
 				dad[e.to] = e.from;
 				cout << "setting G["<<e.to<<"].value to G["<<v<<"].value ("<<G[v].value<<") + e.weight ("<< e.weight << ")\n";//list["<<v<<"].value("<<list[v].value<<") + e.weight:("<<e.weight<<")\n";
-				G[e.to].value = G[v].value + e.weight;//list[v].value + e.weight;
+				G[e.to].value = e.weight;//G[v].value + e.weight;
 				list.push_back(G[e.to]);
 			}
 			else if (G[e.to].status == fringe && G[e.to].value < G[v].value + e.weight) {
 				cout << "fringe\n";
 				cout << "erasing...begin + "<<v<<"...\n";
 				list.erase(list.begin()+v);
-				G[e.to].value = G[v].value + e.weight;
+				G[e.to].value = e.weight;//G[v].value + e.weight;
 				dad[e.to] = e.from;
 				list.push_back(G[e.to]);
 			}
@@ -373,31 +380,107 @@ void Dijkstra(vector<vertex> G, int start, int end) {
 	printPath(dad,start,end);
 }
 // Dijkstra's algorithm modified to use heap structure
-void Dijkstra_heap(vector<vertex> G) {
-
+void Dijkstra_heap(vector<vertex> G, int start, int end) {
+	printGraph(G);
+	int v;
+	vertex heapnode;
+	vector<vertex> heap;
+	int dad[MAXVERTICES];
+	for (int i=0; i<MAXVERTICES; ++i) dad[i] = -1;
+	for (auto &v : G) {
+		v.status = unseen;
+		v.value = 0;
+	}
+	G[start].status = intree;
+	G[start].value = MAXWEIGHT;
+	dad[start] = start;
+	for (auto &e : G[start].edges) {
+		G[e.to].status = fringe;
+		dad[e.to] = start;
+		G[e.to].value = e.weight;
+		insertHeap(heap,G[e.to]);//list.push_back(G[e.to]);
+	}
+	while (!heap.empty()) {//list.size() > 0) {
+		heapnode = rootHeap(heap);
+		v = heapnode.value;//		v = max(list);
+		cout << "v: " << v << " index: " << heapnode.index<<"\nsetting G["<< heapnode.index <<"].status to intree\n";
+		G[heapnode.index].status = intree;
+		printTree(heap);
+		cout << "looping through G["<<heapnode.index<<"] (v["<<heapnode.index<<"]) edges:\n";
+		for (auto &e : G[heapnode.index].edges) {
+			cout << "if g["<<e.to<<"] unseen (state=" << G[e.to].status<<") then:\n";
+			if (G[e.to].status != unseen) { //output stmts for else below
+				cout << "G["<<e.to<<"].status =? fringe, G["<<e.to<<"].value="<<G[e.to].value<<" <? G["<<v<<"].value("<<G[v].value<<")+e.weight("<<e.weight<<")\n";
+			}
+			if (G[e.to].status == unseen) {
+				cout << "setting status G["<<e.to<<"] to fringe\n";
+				G[e.to].status = fringe;
+				cout << "setting dad["<<e.to<<"] to ["<<e.from<<"]\n";
+				dad[e.to] = e.from;
+				cout << "setting G["<<e.to<<"].value to G["<<v<<"].value ("<<G[v].value<<") + e.weight ("<< e.weight << ")\n";//list["<<v<<"].value("<<list[v].value<<") + e.weight:("<<e.weight<<")\n";
+				G[e.to].value = e.weight;//G[v].value + e.weight;
+				insertHeap(heap,G[e.to]);
+			}
+			else if (G[e.to].status == fringe && G[e.to].value < G[v].value + e.weight) {
+				cout << "fringe\n";
+				cout << "erasing...begin + "<<v<<"...\n";
+				deleteHeap(heap,0);
+				G[e.to].value = e.weight;//G[v].value + e.weight;
+				dad[e.to] = e.from;
+				insertHeap(heap,G[e.to]);
+			}
+		}
+		printTree(heap);
+		cout << "erasing...begin + "<<v<<"...\n";
+		deleteHeap(heap,0);
+		printTree(heap);
+	}
+	printPath(dad,start,end);
 }
 // Dijkstra's algorithm with edges sorted by Heapsort
 void Kruskal(vector<vertex> G) {
+	vector<edge> edges;
+	int cycle[MAXVERTICES];
+	int i;
+	for (i=0; i<MAXVERTICES; i++) {
+		cycle[i] = -1;
+	}
+	for (auto v : G)
+		for (auto e : v.edges) {
+			edges.push_back(e);
+		}
+	edges = heapsort(edges);
+	for (i=0; i<edges.size(); ++i) {
 
+	}
 }
 int main() {
 	vector<vertex> G1(MAXVERTICES);
 	vector<vertex> G2(MAXVERTICES);
 	makeGraph(G1,6);					// make sparse graph
 	makeGraph(G2,MAXVERTICES*0.20);		// make dense graph
+
+//	printGraph(G2);		// debug print stmt
+	addPath(G1);
+	addPath(G2);
+//	printline('-',100);	// debug print stmt
+//	printGraph(G2);		// debug print stmt
+
 	// Run 1,2,3
 	// 1-Max Capacity Dijkstra's without heap structure
 	// 2-Max Capacity Dijkstra's with heap structure
-	// 3-Max Capacity Kruskal's with edges sorted by HeapSort
-	switch (1) {
+	// 3-Max Capacity Kruskal's with edges sorted by HeapSort							// will want these to be random connections in case stmts.
+	switch (3) {
 					case 1:
 						cout << "Case 1: Max Capacity using Dijkstra's algorithm without the heap structure\n";
 						Dijkstra(G1, 0, 5);
-//						Dijkstra(G2, 0, 5);
+						Dijkstra(G2, 0, 5);
 						break;
 					case 2:
+						// Note: for this implimentation I had to change the type of heap structure used to a max heap.
 						cout << "case 2: Max Capacity using Dijkstra's algorithm with the heap structure modification\n";
-						Dijkstra_heap(G1);
+						Dijkstra_heap(G1, 0, 5);
+						Dijkstra_heap(G2, 0, 5);
 						break;
 					case 3:
 						cout << "case 3: Max Capacity using Kruskal's algorithm with edges sorted by Heapsort\n";
