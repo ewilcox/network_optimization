@@ -12,14 +12,17 @@
 #include <vector>
 #include <algorithm>
 #include <time.h>
+#include <fstream>
 #include "my_rand.hpp"
 
 using namespace std;
 
-const int MAXVERTICES = 10;
+const int MAXVERTICES = 5000;
 const int SPARSECONNECT = 6;	// number of sparse connections
 const int MAXWEIGHT = 1000;		// max weight of graph edges
-long run;
+long run;						// counter for steps on run
+time_t starttime;				// timer for second evaluation on run
+time_t endtime;
 
 enum {unseen, intree, fringe};
 
@@ -79,7 +82,7 @@ void printAsMatrix(vector<vertex> G) {
 }
 // Finds duplicate number in the vector, return true if already exists in vector
 bool duplicate(vector<edge> e, int vertex, edge newedge) {
-	run++;
+	run++;										// this run only counted after graphs are made (not counting make)
 	if (vertex == newedge.to) return true;		// prevents cycle to same vertex
 	for (u_int i=0; i<e.size(); ++i) {
 		run++;
@@ -111,30 +114,25 @@ void makeGraph(vector<vertex> &G, u_int connections) {
 			newedge2.to = i;
 			newedge2.from = newedge1.to;
 			newedge2.weight = newedge1.weight;
-			run += 6;
 			while (duplicate(G.at(i).edges, i, newedge1) ||
 					G.at(newedge1.to).edges.size() >= connections) {		// keep random weight, get new connect
 				newedge1.to = getRand(0,MAXVERTICES-1);
 				newedge2.to = i;
 				newedge2.from = newedge1.to;
 				++badLoop;
-				run+=4;
 				if (badLoop >= 2*MAXVERTICES) {
 					temp = G.at(newedge1.to).edges.front().to;
 					G.at(newedge1.to).edges.erase(G[newedge1.to].edges.begin());
 					G[temp].edges.erase(G[temp].edges.begin()+my_find(G.at(temp).edges, newedge1.to));
 					--j;	// decrement outside loop per set delete to ensure enough add's to graph
-					run+=2;
 				}
 			}
 			badLoop=0;
 			G.at(i).edges.push_back(newedge1);
 			G.at(newedge1.to).edges.push_back(newedge2);
-			run+=3;
 		}
 	}
 	for (int i=0; i<MAXVERTICES; ++i) {
-		run++;
 		G[i].index = i;
 	}
 }
@@ -336,22 +334,30 @@ void printDad(int dad[]) {
 		cout << "dad[" << i << "] " << dad[i] << endl;
 	}
 }
-void printPath(int dad[], int start, int end) {
+void printPath(int dad[], int start, int end, ofstream &outf) {
 	cout << "Max Path from (" << start << ") to (" << end << ") is: ";
+	outf << "Max Path from (" << start << ") to (" << end << ") is: ";
 	vector<int> path;
 	int current = end;
 	while (current != start) {
 		path.push_back(dad[current]);
+		if (current == -1) {
+			cout << "Error, reached -1 index in printPath()\n";
+			outf << "Error, reached -1 index in printPath()\n";
+			break;
+		}
 		current = dad[current];
 	}
 	while (!path.empty()) {
 		cout << "["<< path.back() << "] -> ";
+		outf << "["<< path.back() << "] -> ";
 		path.pop_back();
 	}
 	cout << '[' << end << "].\n";
+	outf << '[' << end << "].\n";
 }
 // Dijkstra's algorithm without heap structure (regular)
-void Dijkstra(vector<vertex> G, int start, int end) {
+void Dijkstra(vector<vertex> G, int start, int end, ofstream &outf) {
 //	printGraph(G);
 	int v;
 	vector<vertex> list;
@@ -402,7 +408,7 @@ void Dijkstra(vector<vertex> G, int start, int end) {
 			else if (G[e.to].status == fringe && G[e.to].value < G[v].value + e.weight) {
 //				cout << "fringe\n" << "erasing...begin + "<<v<<"...\n";
 				list.erase(list.begin()+v);
-				run+=v+3;
+				run+=list.size()-v+3;
 				G[e.to].value = e.weight;//G[v].value + e.weight;
 				dad[e.to] = e.from;
 				list.push_back(G[e.to]);
@@ -412,13 +418,14 @@ void Dijkstra(vector<vertex> G, int start, int end) {
 //		cout << "erasing...begin + "<<v<<"...\n";
 		list.erase(list.begin()+v);
 //		printGraph(list);
-		run+=v;
+		run+=list.size()-v+3;
 	}
 	cout << "Printing path for Dijkstra:\n";
-	printPath(dad,start,end);
+	outf << "Printing path for Dijkstra:\n";
+	printPath(dad,start,end,outf);
 }
 // Dijkstra's algorithm modified to use heap structure
-void Dijkstra_heap(vector<vertex> G, int start, int end) {
+void Dijkstra_heap(vector<vertex> G, int start, int end, ofstream &outf) {
 //	printGraph(G);
 	int v;
 	vertex heapnode;
@@ -436,11 +443,13 @@ void Dijkstra_heap(vector<vertex> G, int start, int end) {
 	G[start].status = intree;
 	G[start].value = MAXWEIGHT;
 	dad[start] = start;
+	run+=3;
 	for (auto &e : G[start].edges) {
 		G[e.to].status = fringe;
 		dad[e.to] = start;
 		G[e.to].value = e.weight;
 		insertHeap(heap,G[e.to]);
+		run+=4;
 	}
 	while (!heap.empty()) {
 		heapnode = rootHeap(heap);
@@ -449,11 +458,13 @@ void Dijkstra_heap(vector<vertex> G, int start, int end) {
 		G[heapnode.index].status = intree;
 //		printTree(heap);
 //		cout << "looping through G["<<heapnode.index<<"] (v["<<heapnode.index<<"]) edges:\n";
+		run+=2;
 		for (auto &e : G[heapnode.index].edges) {
 //			cout << "if g["<<e.to<<"] unseen (state=" << G[e.to].status<<") then:\n";
 //			if (G[e.to].status != unseen) { //output stmts for else below
 //				cout << "G["<<e.to<<"].status =? fringe, G["<<e.to<<"].value="<<G[e.to].value<<" <? G["<<v<<"].value("<<G[v].value<<")+e.weight("<<e.weight<<")\n";
 //			}
+			run++;
 			if (G[e.to].status == unseen) {
 //				cout << "setting status G["<<e.to<<"] to fringe\n";
 				G[e.to].status = fringe;
@@ -462,6 +473,7 @@ void Dijkstra_heap(vector<vertex> G, int start, int end) {
 //				cout << "setting G["<<e.to<<"].value to G["<<v<<"].value ("<<G[v].value<<") + e.weight ("<< e.weight << ")\n";//list["<<v<<"].value("<<list[v].value<<") + e.weight:("<<e.weight<<")\n";
 				G[e.to].value = e.weight;//G[v].value + e.weight;
 				insertHeap(heap,G[e.to]);
+				run+=4;
 			}
 			else if (G[e.to].status == fringe && G[e.to].value < G[v].value + e.weight) {
 //				cout << "fringe\n" << "erasing...begin + "<<v<<"...\n";
@@ -469,19 +481,23 @@ void Dijkstra_heap(vector<vertex> G, int start, int end) {
 				G[e.to].value = e.weight;//G[v].value + e.weight;
 				dad[e.to] = e.from;
 				insertHeap(heap,G[e.to]);
+				run+=4;
 			}
 		}
 //		printTree(heap);
 //		cout << "erasing...begin + "<<v<<"...\n";
 		deleteHeap(heap,0);
+		run++;
 //		printTree(heap);
 	}
 	cout << "Printing path for Dijkstra_heap:\n";
-	printPath(dad,start,end);
+	outf << "Printing path for Dijkstra_heap:\n";
+	printPath(dad,start,end,outf);
 }
 // Find root function for Kruskal's algorithm
 int findRoot(int dad[], int v) {
 	while (dad[v] != -1) {
+		run++;
 		v = dad[v];
 	}
 	return v;
@@ -493,84 +509,145 @@ void myUnion(int dad[], int rank[], int r1, int r2) {
 	if (rank[r1] == rank[r2]) {
 		dad[r2] = r1;
 		rank[r1]++;
+		run+=2;
 	}
+	run+=3;
 }
 // Dijkstra's algorithm with edges sorted by Heapsort
-void Kruskal(vector<vertex> G, int start, int end) {
+void Kruskal(vector<vertex> G, int start, int end, ofstream &outf) {
 	vector<edge> edges;
-//	vector<edge> path;
+	vector<edge> path;
 	edge e;
 	int dad[MAXVERTICES];
 	int rank[MAXVERTICES];
+	int fill_count = 0;		// counter to stop adding edges
 	u_int i;
 	for (i=0; i<MAXVERTICES; i++) {
-		dad[i] = -1;
+		dad[i] = -1;		// root nodes listed as -1 instead of 0 - uses 0 as a node
 		rank[i] = 0;
+		run+=2;
 	}
 	for (auto v : G)
 		for (auto e : v.edges) {
 			edges.push_back(e);
+			run++;
 		}
 	edges = heapsort(edges);
 //	cout << "setting dad["<<edges[0].to<<"] = ["<<edges[0].from<<"]\n";
 //	dad[edges[0].to] = edges[0].from;
 	for (i=0; i<edges.size(); ++i) {
 		e = edges[i];
+		run++;
 //		cout << "if findroot("<<e.from<<")="<<findRoot(dad,e.from)<<" != findroot("<<e.to<<")="<<findRoot(dad,e.to)<<" do union...\n";
 //		cout << "setting "<<e.from<< " to "<<e.to<<endl;
 		if (findRoot(dad,e.from) != findRoot(dad,e.to)) {
+			if (findRoot(dad,e.from) == -1 || findRoot(dad,e.to) == -1) fill_count++;
 //			cout << "calling union\n";
+			path.push_back(e);
 			myUnion(dad,rank,e.from,e.to);
+			run+=2;
 		}
 		else if (dad[e.to] != -1 && dad[e.from] == -1){
 //			cout << "else dad["<<e.to<<"] = "<<e.from<<"\n";
 			dad[e.to] = e.from;
+			run++;
 		}
+
+		if (fill_count > MAXVERTICES) break;	// stop processing - have added enough
 //		cout << "dad["<<e.to<<"] = "<<dad[e.to]<<endl;
 	}
-	printDad(dad);
-	printPath(dad, start, end);
+//	printDad(dad);
+//	for (auto p : path) {
+//		cout << p.from << ":"<<p.to<<"|"<<p.weight<<endl;
+//	}
+	printPath(dad, start, end, outf);
 }
 int main() {
 	vector<vertex> G1(MAXVERTICES);
 	vector<vertex> G2(MAXVERTICES);
 	ofstream outf;
+	ofstream outf2;
 
-//	printGraph(G2);		// debug print stmt
-//	printline('-',100);	// debug print stmt
-//	printGraph(G2);		// debug print stmt
+	// Run 1 or 2 for switch statement below
+	// 1-Run algorithms for Sparse Graph Structure
+	// 2-Run algorithms for Dense Graph Structure
+	//   Each runs 5 times for same graph structure, output to files and console
 
-	// Run 1,2,3
-	// 1-Max Capacity Dijkstra's without heap structure
-	// 2-Max Capacity Dijkstra's with heap structure
-	// 3-Max Capacity Kruskal's with edges sorted by HeapSort
-	for (int i=0; i<5; i++) {
-		run = 0;							// run count
-		makeGraph(G1,6);					// make sparse graph
-		makeGraph(G2,MAXVERTICES*0.20);		// make dense graph
-		addPath(G1);
-		addPath(G2);
+	int algorithm = 2;	// 1 for sparse, 2 for dense
+
+	outf.open("sparse_output.txt");
+	outf2.open("dense_output.txt");
+
+	for (int i=1; i<=5; i++) {
 		int start = getRand(0,MAXVERTICES-1);
 		int end = getRand(0,MAXVERTICES-1);
-		cout << "start="<<start<<" end="<<end<<endl;
-		switch (1) {
+		switch (algorithm) {
 		case 1:
-			cout << "Case 1: Max Capacity using Dijkstra's algorithm without the heap structure\n";
-			Dijkstra(G1, start, end);
-			Dijkstra(G2, start, end);
+			outf << "Sparse Graph output:\nGraph vertices = "<<MAXVERTICES<<", finding path from node "<<start<<" to "<<end<<" - run #"<<i<<".\n";
+			cout << "Sparse Graph output, also generated in 'sparse_output.txt' - run #"<<i<<"\n";
+			cout << "Graph vertices = "<<MAXVERTICES<<", finding path from node "<<start<<" to "<<end<<".\n";
+			makeGraph(G1,6);					// make sparse graph
+			addPath(G1);
+			run = 0;							// run count
+			starttime = clock();
+			Dijkstra(G1,start,end,outf);
+			endtime = clock();
+			cout << "Run count (steps): "<<run<<".\n";
+			outf << "Run count (steps): "<<run<<".\n";
+			cout << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			outf << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			run = 0;
+			starttime = clock();
+			Dijkstra_heap(G1,start,end,outf);
+			endtime = clock();
+			cout << "Run count (steps): "<<run<<".\n";
+			outf << "Run count (steps): "<<run<<".\n";
+			cout << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			outf << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			run = 0;
+			starttime = clock();
+			Kruskal(G1,start,end,outf);
+			endtime = clock();
+			cout << "Run count (steps): "<<run<<".\n";
+			outf << "Run count (steps): "<<run<<".\n";
+			cout << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			outf << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
 			break;
 		case 2:
-			// Note: for this implimentation I had to change the type of heap structure used to a max heap.
-			cout << "case 2: Max Capacity using Dijkstra's algorithm with the heap structure modification\n";
-			Dijkstra_heap(G1, start, end);
-			Dijkstra_heap(G2, start, end);
-			break;
-		case 3:
-			cout << "case 3: Max Capacity using Kruskal's algorithm with edges sorted by Heapsort\n";
-			Dijkstra(G1, start, end);
-			Kruskal(G1, start, end);
+			outf2 << "Dense Graph output:\nGraph vertices = "<<MAXVERTICES<<", finding path from node "<<start<<" to "<<end<<" - run #"<<i<<".\n";
+			cout << "Dense Graph output, also generated in 'dense_output.txt' - run #"<<i<<"\n";
+			cout << "Graph vertices = "<<MAXVERTICES<<", finding path from node "<<start<<" to "<<end<<".\n";
+			makeGraph(G2,MAXVERTICES*0.20);		// make dense graph
+			addPath(G2);
+			run = 0;							// run count
+			starttime = clock();
+			Dijkstra(G2,start,end,outf2);
+			endtime = clock();
+			cout << "Run count (steps): "<<run<<".\n";
+			outf2 << "Run count (steps): "<<run<<".\n";
+			cout << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			outf2 << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			run = 0;
+			starttime = clock();
+			Dijkstra_heap(G2,start,end,outf2);
+			endtime = clock();
+			cout << "Run count (steps): "<<run<<".\n";
+			outf2 << "Run count (steps): "<<run<<".\n";
+			cout << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			outf2 << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			run = 0;
+			starttime = clock();
+			Kruskal(G2,start,end,outf2);
+			endtime = clock();
+			cout << "Run count (steps): "<<run<<".\n";
+			outf2 << "Run count (steps): "<<run<<".\n";
+			cout << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
+			outf2 << "Time of run: "<< (double)(endtime-starttime) << " seconds.\n";
 			break;
 		};
 	}
+	cout << "\nDone.\n";
+	outf.close();
+	outf2.close();
 	return 0;
 }
