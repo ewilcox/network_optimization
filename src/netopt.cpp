@@ -17,7 +17,7 @@
 
 using namespace std;
 
-const int MAXVERTICES = 5000;
+const int MAXVERTICES = 500;
 const int SPARSECONNECT = 6;	// number of sparse connections
 const int MAXWEIGHT = 1000;		// max weight of graph edges
 long run;						// counter for steps on run
@@ -520,7 +520,7 @@ void Kruskal(vector<vertex> G, int start, int end, ofstream &outf) {
 	edge e;
 	int dad[MAXVERTICES];
 	int rank[MAXVERTICES];
-	int fill_count = 0;		// counter to stop adding edges
+//	int fill_count = 0;		// counter to stop adding edges
 	u_int i;
 	for (i=0; i<MAXVERTICES; i++) {
 		dad[i] = -1;		// root nodes listed as -1 instead of 0 - uses 0 as a node
@@ -541,7 +541,7 @@ void Kruskal(vector<vertex> G, int start, int end, ofstream &outf) {
 //		cout << "if findroot("<<e.from<<")="<<findRoot(dad,e.from)<<" != findroot("<<e.to<<")="<<findRoot(dad,e.to)<<" do union...\n";
 //		cout << "setting "<<e.from<< " to "<<e.to<<endl;
 		if (findRoot(dad,e.from) != findRoot(dad,e.to)) {
-			if (findRoot(dad,e.from) == -1 || findRoot(dad,e.to) == -1) fill_count++;
+//			if (findRoot(dad,e.from) == -1 || findRoot(dad,e.to) == -1) fill_count++;
 //			cout << "calling union\n";
 			path.push_back(e);
 			myUnion(dad,rank,e.from,e.to);
@@ -552,15 +552,15 @@ void Kruskal(vector<vertex> G, int start, int end, ofstream &outf) {
 			dad[e.to] = e.from;
 			run++;
 		}
-
-		if (fill_count > MAXVERTICES) break;	// stop processing - have added enough
+		if (path.size() > MAXVERTICES) break;
+//		if (fill_count > MAXVERTICES) break;	// stop processing - have added enough
 //		cout << "dad["<<e.to<<"] = "<<dad[e.to]<<endl;
 	}
-//	printDad(dad);
-//	for (auto p : path) {
-//		cout << p.from << ":"<<p.to<<"|"<<p.weight<<endl;
-//	}
-	printPath(dad, start, end, outf);
+	printDad(dad);
+	for (auto p : path) {
+		cout << p.from << ":"<<p.to<<"|"<<p.weight<<endl;
+	}
+//	printPath(dad, start, end, outf);
 }
 int main() {
 	vector<vertex> G1(MAXVERTICES);
@@ -573,12 +573,12 @@ int main() {
 	// 2-Run algorithms for Dense Graph Structure
 	//   Each runs 5 times for same graph structure, output to files and console
 
-	int algorithm = 2;	// 1 for sparse, 2 for dense
+	int algorithm = 1;	// 1 for sparse, 2 for dense
 
 	outf.open("sparse_output.txt");
 	outf2.open("dense_output.txt");
 
-	for (int i=1; i<=5; i++) {
+	for (int i=1; i<=1; i++) {
 		int start = getRand(0,MAXVERTICES-1);
 		int end = getRand(0,MAXVERTICES-1);
 		switch (algorithm) {
